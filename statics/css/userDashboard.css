@@ -1,0 +1,78 @@
+/* Add this in userDashboard.css */
+.policy {
+    margin-bottom: 20px;
+    padding: 20px;
+    background-color: #f9f9f9;
+    border-radius: 8px;
+}
+
+.pagination-button {
+    margin: 0 5px;
+    padding: 5px 10px;
+    cursor: pointer;
+    background-color: #d1d5db;
+    border-radius: 5px;
+}
+
+.pagination-button.active {
+    background-color: #6b7280;
+    color: #fff;
+}
+
+.comment-form textarea {
+    width: 100%;
+    min-height: 100px; /* Increase the height of the textarea */
+}
+
+.star {
+    cursor: pointer;
+}
+
+/* Update the CSS in userDashboard.css */
+
+.star {
+    cursor: pointer;
+    color: black; /* Default color */
+}
+
+.star.active {
+    color: green; /* Default color for 4 or 5 stars */
+}
+
+.star.active:nth-child(-n + 3) {
+    color: yellow; /* Yellow for 3 stars */
+}
+
+.star.active:nth-child(-n + 2) {
+    color: red; /* Red for 1 or 2 stars */
+}
+
+.pagination-button {
+    margin: 0 5px;
+    padding: 5px 10px;
+    cursor: pointer;
+    background-color: black; /* Change button background color to black */
+    color: white; /* Change button text color to white */
+    border: none;
+    border-radius: 5px;
+}
+
+.pagination-button.active {
+    background-color: #6b7280;
+}
+
+
+
+.comment-form button[type="submit"] {
+    background-color: blue; /* Blue background color */
+    color: white;
+    border: none;
+    padding: 5px 10px;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.comment-form button[type="submit"]:hover {
+    background-color: darkblue; /* Darker blue on hover */
+}
+

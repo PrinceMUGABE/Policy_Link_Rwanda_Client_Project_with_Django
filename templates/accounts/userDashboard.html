@@ -1,0 +1,139 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="{% static 'css/userDashboard.css' %}" rel="stylesheet">
+</head>
+<body class="bg-purple-800">
+    <nav class="navbar navbar-expand-lg navbar-primary bg-purple-900 py-5 sticky top-0">
+        <div class="container mx-auto">
+            <a class="navbar-brand text-2xl text-primary" href="#">Policy Link Rwanda</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="navbar-brand text-2xl text-primary" href="{% url 'index' %}">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="navbar-brand text-2xl text-primary" href="#contact">Contact Us</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="navbar-brand text-2xl text-primary" href="#about">About Us</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="navbar-brand text-2xl text-primary" href="{% url 'logout' %}">Logout</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+    <div class="container mx-auto mt-4 py-5">
+        <div class="flex flex-col lg:flex-row lg:space-x-8">
+            <div class="lg:w-1/2 mb-5 lg:mb-0">
+                <div class="mb-4">
+                    <select id="institutionType" class="form-select form-select-lg">
+                        <option value="">Select Type of Institution</option>
+                        <option value="private">Private</option>
+                        <option value="public">Public</option>
+                    </select>
+                </div>
+                <div class="mb-4">
+                    <select id="institution" class="form-select form-select-lg">
+                        <option value="">Select Institution</option>
+                        <!-- Options will be dynamically added here -->
+                    </select>
+                </div>
+                <div class="mb-4">
+                    <select id="department" class="form-select form-select-lg">
+                        <option value="">Select Department</option>
+                        <!-- Options will be dynamically added here -->
+                    </select>
+                </div>
+            </div>
+            <div class="lg:w-1/2">
+                <div class="policy-display">
+                    <div id="selected-info"></div> <!-- Display selected institution name, type, selected department -->
+                    <hr>
+                    <!-- Horizontal line to separate selected info and policies -->
+                    <!-- Policies will be displayed here -->
+                    <div id="policy-list" class="bg-white rounded-lg shadow-lg p-4"></div>
+                    <div id="pagination" class="flex justify-center mt-4"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+<script src="{% static 'js/userDashboard.js' %}"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const institutionTypeSelect = document.getElementById('institutionType');
+    const institutionSelect = document.getElementById('institution');
+    const departmentSelect = document.getElementById('department');
+    const policyList = document.getElementById('policy-list');
+    const selectedInfo = document.getElementById('selected-info');
+
+    institutionTypeSelect.addEventListener('change', function() {
+        const institutionType = institutionTypeSelect.value;
+        if (institutionType) {
+            fetch(`/get_institutions_by_type/?type=${institutionType}`)
+                .then(response => response.json())
+                .then(data => {
+                    institutionSelect.innerHTML = '<option value="">Select Institution</option>';
+                    data.forEach(inst => {
+                        const option = document.createElement('option');
+                        option.value = inst.id;
+                        option.textContent = inst.name;
+                        institutionSelect.appendChild(option);
+                    });
+                });
+        }
+    });
+
+    institutionSelect.addEventListener('change', function() {
+        const institutionId = institutionSelect.value;
+        if (institutionId) {
+            fetch(`/get_departments_by_institution/?institution_id=${institutionId}`)
+                .then(response => response.json())
+                .then(data => {
+                    departmentSelect.innerHTML = '<option value="">Select Department</option>';
+                    data.forEach(dept => {
+                        const option = document.createElement('option');
+                        option.value = dept.id;
+                        option.textContent = dept.name;
+                        departmentSelect.appendChild(option);
+                    });
+                });
+        }
+    });
+
+    departmentSelect.addEventListener('change', function() {
+        const departmentId = departmentSelect.value;
+        if (departmentId) {
+            fetch(`/get_policies_by_department/?department_id=${departmentId}`)
+                .then(response => response.json())
+                .then(data => {
+                    const { policies, department_name, institute_name, institute_type } = data;
+                    selectedInfo.innerHTML = `<strong>Institution:</strong> ${institute_name} (${institute_type})<br>
+                                              <strong>Department:</strong> ${department_name}`;
+                    policyList.innerHTML = '';
+                    policies.forEach(policy => {
+                        const policyDiv = document.createElement('div');
+                        policyDiv.classList.add('policy-item', 'mb-2');
+                        policyDiv.innerHTML = `<strong>${policy.name}</strong><br>${policy.description}`;
+                        policyList.appendChild(policyDiv);
+                    });
+                });
+        }
+    });
+});
+
+</script>
+</body>
+</html>

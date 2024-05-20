@@ -1,0 +1,55 @@
+/* admin_styles.css */
+
+/* Hamburger menu styles */
+.hamburger-menu {
+    position: fixed;
+    top: 10px;
+    left: 10px;
+    z-index: 102; /* Ensure hamburger menu stays on top of other content */
+    cursor: pointer;
+}
+
+.hamburger-line {
+    width: 25px;
+    height: 3px;
+    background-color: #333;
+    margin: 5px 0;
+}
+
+/* Sidebar styles */
+.sidebar {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: -250px; /* Initially hide sidebar */
+    width: 250px;
+    background-color: #f8f9fa;
+    overflow-x: hidden;
+    transition: all 0.3s ease;
+}
+
+.sidebar.active {
+    left: 0; /* Show sidebar when active class is applied */
+}
+
+/* Custom styles for the content */
+.content {
+    margin-left: 0; /* Adjust for sidebar width */
+    padding: 20px; /* Add padding to prevent content from overlapping with the sidebar */
+    transition: all 0.3s ease;
+}
+
+
+/* Center the table */
+        table {
+            margin: auto;
+        }
+
+        /* Style for the links */
+        .edit-link,
+        .delete-link {
+            color: blue;
+            text-decoration: underline;
+            cursor: pointer;
+            margin-right: 10px;
+        }

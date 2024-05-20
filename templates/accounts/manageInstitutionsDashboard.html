@@ -1,0 +1,136 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Institutions</title>
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="{% static 'css/bootstrap.min.css' %}">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{% static 'css/admin_styles.css' %}">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+</head>
+<body>
+    <!-- Side navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top"> <!-- Added fixed-top class -->
+        <div class="container-fluid">
+            <!-- Hamburger icon -->
+            <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav"
+                    aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <a class="navbar-brand" href="#">Dashboard</a>
+        </div>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav">
+                <li class="nav-item active">
+                    <a class="nav-link" href="{% url 'admin_dashboard' %}">Dashboard</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'view_all_users' %}">Manage Users</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/institution/view_all_institutions/">Manage Institutions</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/institution/view_all_departments/">Manage Departments</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/institution/view_all_policies">Manage Policies</a>
+                </li>
+
+                <li class="nav-item">
+                    <a class="nav-link" href="#">Logout</a>
+                </li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Main content -->
+    <div class="container-fluid" style="margin-top: 77px;"> <!-- Added margin-top to accommodate fixed-top navbar -->
+        <div class="d-flex justify-center align-center">
+            <h1 style="text-align: center;">Manage Institutions</h1>
+            <a class="btn btn-primary" href="/institution/add_institution/">Add Institution</a>
+        </div>
+
+        <table class="table table-primary align-center" id="user-table">
+            <!-- Table header -->
+            <thead class="table table-primary">
+                <!-- Header columns -->
+                <tr>
+                    <th>ID</th>
+                    <th>Name</th>
+                    <th>Type</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <!-- Table body -->
+            <tbody>
+                <!-- User data rows -->
+                {% for institution in institutions %}
+                <tr id="institution-{{ institution.id }}">
+                    <td>{{ institution.id }}</td>
+                    <td>{{ institution.name }}</td>
+                    <td>{{ institution.type }}</td>
+                    <td>
+                        <button class="delete-button btn btn-danger" data-id="{{ institution.id }}">Delete</button>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script>
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+
+        $(document).ready(function() {
+            $('.delete-button').on('click', function() {
+                const institutionId = $(this).data('id');
+                const row = $(this).closest('tr');
+
+                if (confirm('Are you sure you want to delete this institution?')) {
+                    $.ajax({
+                        url: '{% url "delete_institution" %}',
+                        type: 'POST',
+                        data: JSON.stringify({ id: institutionId }),
+                        contentType: 'application/json',
+                        headers: {
+                            'X-CSRFToken': getCookie('csrftoken')
+                        },
+                        success: function(response) {
+                            if (response.success) {
+                                row.remove();
+                                alert('Institution deleted successfully');
+                            } else {
+                                alert('Failed to delete institution: ' + response.message);
+                            }
+                        },
+                        error: function() {
+                            alert('An error occurred while deleting the institution');
+                        }
+                    });
+                }
+            });
+        });
+    </script>
+</body>
+</html>
