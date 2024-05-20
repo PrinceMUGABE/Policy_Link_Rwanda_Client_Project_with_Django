@@ -38,7 +38,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework import status
 
 @api_view(['POST'])
-@permission_classes([IsAuthenticated])
+# @permission_classes([IsAuthenticated])
 def add_institution(request):
     name = request.data.get('name')
     type = request.data.get('type')
@@ -91,7 +91,7 @@ def add_institution(request):
 
 
 @api_view(['DELETE'])
-@permission_classes([IsAuthenticated])
+# @permission_classes([IsAuthenticated])
 @csrf_exempt
 def delete_institution(request):
     try:
@@ -126,7 +126,7 @@ def view_all_policies(request):
     serializer = PolicySerializer(policies, many=True)
     return Response(serializer.data)
 
-
+@api_view(['GET'])
 # @login_required
 def get_institutions_by_type(request):
     institution_type = request.GET.get('type')
@@ -136,7 +136,7 @@ def get_institutions_by_type(request):
 
 
 @api_view(['GET'])
-@permission_classes([IsAuthenticated])
+# @permission_classes([IsAuthenticated])
 def get_departments_by_institution(request):
     institution_id = request.GET.get('institution_id')
     # synchronize_with_server()
@@ -146,7 +146,7 @@ def get_departments_by_institution(request):
 
 
 @api_view(['GET'])
-@permission_classes([IsAuthenticated])
+# @permission_classes([IsAuthenticated])
 def get_policies_by_department(request):
     department_id = request.GET.get('department_id')
     department = Department.objects.get(id=department_id)
