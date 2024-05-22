@@ -73,25 +73,25 @@ WSGI_APPLICATION = 'PolicyClientProject.wsgi.application'
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
 
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'rwandaPolicyLinkClientDatabase',
-        'USER': 'root',
-        'PASSWORD': '',  # Add your MySQL password here
-        'HOST': 'localhost',
-        'PORT': '3306',
-    }
-}
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.mysql',
+#         'NAME': 'rwandaPolicyLinkClientDatabase',
+#         'USER': 'root',
+#         'PASSWORD': '',  # Add your MySQL password here
+#         'HOST': 'localhost',
+#         'PORT': '3306',
+#     }
+# }
 
 
 
 # Database url from remote Railway app 
 
-# DATABASES = {
-#     'default': dj_database_url.parse(env('DATABASE_URL'))
+DATABASES = {
+    'default': dj_database_url.parse(env('DATABASE_URL'))
 
-# }  
+}  
 
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'
