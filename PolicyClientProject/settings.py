@@ -73,7 +73,6 @@ WSGI_APPLICATION = 'PolicyClientProject.wsgi.application'
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
 
 
-'''
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
@@ -85,14 +84,14 @@ DATABASES = {
     }
 }
 
-'''
+
 
 # Database url from remote Railway app 
 
-DATABASES = {
-    'default': dj_database_url.parse(env('DATABASE_URL'))
+# DATABASES = {
+#     'default': dj_database_url.parse(env('DATABASE_URL'))
 
-}  
+# }  
 
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'

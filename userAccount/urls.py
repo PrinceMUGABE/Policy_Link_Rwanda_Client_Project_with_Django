@@ -19,4 +19,5 @@ urlpatterns = [
     path('account/users_distribution/', views.users_distribution, name='users_distribution'),
     path('account/all_users/', views.all_users, name='all_users'),
     path('account/user_growth_over_months/', views.user_growth_over_years, name='user_growth_over_years'),
+    path('account/reset_password/', views.reset_password, name='reset_password'),
 ]

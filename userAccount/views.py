@@ -282,3 +282,39 @@ def user_growth_over_years(request):
 
     return JsonResponse({'graph_data': graph_data})
 
+
+
+
+
+from django.contrib.auth.hashers import make_password
+from django.core.mail import send_mail
+from rest_framework import status
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import AllowAny
+from rest_framework.response import Response
+from .models import CustomUser
+
+@api_view(['POST'])
+# @permission_classes([AllowAny])
+def reset_password(request):
+    username = request.data.get('username')
+    email = request.data.get('email')
+    new_password = request.data.get('new_password')
+
+    try:
+        user = CustomUser.objects.get(username=username, email=email)
+        
+        # Update the user's password
+        user.password = make_password(new_password)
+        user.save()
+
+        # Send email notification about the password change
+        subject = 'Your Password Has Been Changed'
+        message = f'Hello {user.username},\n\nYour password has been successfully changed.\n\nIf you did not request this change, please contact support immediately.'
+        from_email = 'Policy-Link-Rwanda'
+        recipient_list = [email]
+        send_mail(subject, message, from_email, recipient_list)
+
+        return Response({'message': 'Password changed successfully. Please check your email for confirmation.'}, status=status.HTTP_200_OK)
+    except CustomUser.DoesNotExist:
+        return Response({'error': 'Invalid username or email.'}, status=status.HTTP_400_BAD_REQUEST)
