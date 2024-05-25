@@ -34,6 +34,7 @@ INSTALLED_APPS = [
     'userAccount',
     'institutionApp',
     'rest_framework',
+    'corsheaders',
 ]
 
 AUTH_USER_MODEL = 'userAccount.CustomUser'
@@ -47,7 +48,17 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
+    'django.middleware.common.CommonMiddleware',
 ]
+
+
+
+CORS_ALLOWED_ORIGINS = [
+    "https://plrc.netlify.app/",
+    "http://127.0.0.1:5500/",
+]
+
 
 ROOT_URLCONF = 'PolicyClientProject.urls'
 
