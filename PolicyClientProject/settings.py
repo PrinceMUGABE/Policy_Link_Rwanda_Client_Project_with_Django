@@ -28,6 +28,7 @@ INSTALLED_APPS = [
     'institutionApp',
     'rest_framework',
     'corsheaders',
+    'rest_framework_authtoken',
 ]
 
 AUTH_USER_MODEL = 'userAccount.CustomUser'
@@ -47,7 +48,10 @@ MIDDLEWARE = [
 CORS_ALLOWED_ORIGINS = [
     "https://plrc.netlify.app",
     "http://127.0.0.1:5500",
+    "https://plcylinkrwanda.netlify.app",
 ]
+
+CORS_ALLOW_ALL_ORGINS = True
 
 ROOT_URLCONF = 'PolicyClientProject.urls'
 
