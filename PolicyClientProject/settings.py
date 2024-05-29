@@ -28,7 +28,7 @@ INSTALLED_APPS = [
     'institutionApp',
     'rest_framework',
     'corsheaders',
-    'rest_framework_authtoken',
+ 
 ]
 
 AUTH_USER_MODEL = 'userAccount.CustomUser'
