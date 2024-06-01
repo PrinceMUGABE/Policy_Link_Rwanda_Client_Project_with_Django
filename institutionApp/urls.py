@@ -5,7 +5,7 @@ from .views import download_policies_pdf
 urlpatterns = [
     path('view_all_institutions/', views.view_all_institutions, name='view_all_institutions'),
     path('add_institution/', views.add_institution, name='add_institution'),
-    path('delete_institution/', views.delete_institution, name='delete_institution'),
+    path('delete_institution/<int:institution_id>/', views.delete_institution, name='delete_institution'),
     path('view_all_departments/', views.view_all_departments, name='view_all_departments'),
     path('view_all_policies/', views.view_all_policies, name='view_all_policies'),
     path('get_institutions_by_type/', views.get_institutions_by_type, name='get_institutions_by_type'),

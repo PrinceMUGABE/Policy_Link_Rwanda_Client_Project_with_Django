@@ -1,4 +1,4 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import get_object_or_404, render, redirect
 from django.contrib import messages
 from django.views.decorators.csrf import csrf_exempt
 import json
@@ -93,22 +93,10 @@ def add_institution(request):
 @api_view(['DELETE'])
 # @permission_classes([IsAuthenticated])
 @csrf_exempt
-def delete_institution(request):
-    try:
-        data = json.loads(request.body)
-        institution_id = data.get('id')
-
-        # Check if the institution exists
-        try:
-            institution = Institution.objects.get(id=institution_id)
-        except Institution.DoesNotExist:
-            return Response({'error': 'Institution does not exist'}, status=status.HTTP_404_NOT_FOUND)
-
-        # Delete the institution
-        institution.delete()
-        return Response({'message': 'Institution deleted successfully'}, status=status.HTTP_200_OK)
-    except json.JSONDecodeError:
-        return Response({'error': 'Invalid JSON'}, status=status.HTTP_400_BAD_REQUEST)
+def delete_institution(request, institution_id):
+    institution = get_object_or_404(Institution, id=institution_id)
+    institution.delete()
+    return JsonResponse({'message': 'institution deleted successfully'}, status=200)
 
 
 @api_view(['GET'])
@@ -135,12 +123,18 @@ def get_institutions_by_type(request):
     return JsonResponse(list(institutions), safe=False)
 
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 @api_view(['GET'])
-# @permission_classes([IsAuthenticated])
 def get_departments_by_institution(request):
     institution_id = request.GET.get('institution_id')
-    # synchronize_with_server()
-    departments = Department.objects.filter(institution_id=institution_id)
+    logger.debug(f"Received institution_id: {institution_id}")
+
+    departments = Department.objects.filter(institution=institution_id)
+    logger.debug(f"Departments found: {departments}")
+
     serializer = DepartmentSerializer(departments, many=True)
     return Response(serializer.data)
 
@@ -149,8 +143,10 @@ def get_departments_by_institution(request):
 # @permission_classes([IsAuthenticated])
 def get_policies_by_department(request):
     department_id = request.GET.get('department_id')
+    
     department = Department.objects.get(id=department_id)
-    # synchronize_with_server()
+    
+    
     policies = Policy.objects.filter(department=department)
     serializer = PolicySerializer(policies, many=True)
     response_data = {
@@ -549,6 +545,7 @@ from .models import Comment, Policy
 from userAccount.models import CustomUser
 
 @api_view(['POST'])
+
 def add_comment(request):
     if request.method == 'POST':
         email = request.data.get('email')
