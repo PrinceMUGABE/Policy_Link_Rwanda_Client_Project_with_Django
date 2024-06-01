@@ -318,3 +318,26 @@ def reset_password(request):
         return Response({'message': 'Password changed successfully. Please check your email for confirmation.'}, status=status.HTTP_200_OK)
     except CustomUser.DoesNotExist:
         return Response({'error': 'Invalid username or email.'}, status=status.HTTP_400_BAD_REQUEST)
+
+
+
+
+# userAccount/views.py
+from django.shortcuts import get_object_or_404
+from django.http import JsonResponse
+from .models import CustomUser
+
+def get_user_by_id(request, user_id):
+    user = get_object_or_404(CustomUser, id=user_id)
+    user_data = {
+        'id': user.id,
+        'firstname': user.firstname,
+        'lastname': user.lastname,
+        'username': user.username,
+        'email': user.email,
+        'phone': user.phone,
+        'role': user.role,
+        'created_at': user.created_at,
+        'last_login': user.last_login,
+    }
+    return JsonResponse(user_data)
