@@ -147,12 +147,7 @@ def user_login(request):
 def login_otp_verification(request):
     entered_otp = request.data.get('otp')
     actual_otp = request.session.get('otp')
-    # otp_expiry = request.session.get('otp_expiry')
-
-    # Check if OTP has expired
-    # if timezone.now() > timezone.datetime.fromisoformat(otp_expiry):
-    #     return Response({'error': 'OTP has expired. Please login again.'}, status=status.HTTP_400_BAD_REQUEST)
-
+ 
     # Verify OTP
     if entered_otp == actual_otp:
         username = request.session.get('username')
