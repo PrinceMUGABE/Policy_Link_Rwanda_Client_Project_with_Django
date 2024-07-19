@@ -12,9 +12,9 @@ environ.Env.read_env()
 SECRET_KEY = 'django-insecure-!8@m(9(^=j=s1!g1bdw^z8q@9vlsyrz&^)$dm9#lhiv4%@pku!'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = True  # Set to False in production
 
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = ['*']  # Set appropriate hosts for production
 
 # Application definition
 INSTALLED_APPS = [
@@ -28,6 +28,7 @@ INSTALLED_APPS = [
     'institutionApp',
     'rest_framework',
     'corsheaders',
+    'userOrganizationApp',
  
 ]
 
@@ -35,9 +36,9 @@ AUTH_USER_MODEL = 'userAccount.CustomUser'
 LOGIN_URL = '/login/'
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
-    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -45,14 +46,39 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
+
+SESSION_ENGINE = 'django.contrib.sessions.backends.db'
+
+# Set a session cookie name
+SESSION_COOKIE_NAME = 'sessionid'
+
+# Ensure sessions expire when the user closes the browser
+SESSION_EXPIRE_AT_BROWSER_CLOSE = True
+
+# Set session timeout (in seconds)
+SESSION_COOKIE_AGE = 1200  # 20 minutes
+
+
 CORS_ALLOWED_ORIGINS = [
     "https://plrc.netlify.app",
-    "http://127.0.0.1:5500",
     "https://plcylinkrwanda.netlify.app",
     "http://localhost:8000",
+    "http://localhost:5500",
 ]
 
-CORS_ALLOW_ALL_ORGINS = True
+
+CORS_ALLOW_METHODS = [
+    'DELETE',
+    'GET',
+    'OPTIONS',
+    'PATCH',
+    'POST',
+    'PUT',
+]
+
+
+# Alternatively, allow all origins in development
+CORS_ALLOW_ALL_ORIGINS = True
 
 ROOT_URLCONF = 'PolicyClientProject.urls'
 
@@ -73,23 +99,20 @@ TEMPLATES = [
 ]
 WSGI_APPLICATION = 'PolicyClientProject.wsgi.application'
 
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': 'rwandaPolicyLinkClientDatabase',
+        'USER': 'root',
+        'PASSWORD': '',
+        'HOST': 'localhost',
+        'PORT': '3306',
+    }
+}
 
 # DATABASES = {
-#     'default': {
-#         'ENGINE': 'django.db.backends.mysql',
-#         'NAME': 'rwandaPolicyLinkClientDatabase',
-#         'USER': 'root',
-#         'PASSWORD': '',
-#         'HOST': 'localhost',
-#         'PORT': '3306',
-#     }
+#     'default': dj_database_url.parse(env('DATABASE_URL'))
 # }
-
-
-# Database
-DATABASES = {
-    'default': dj_database_url.parse(env('DATABASE_URL'))
-}
 
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'
@@ -130,9 +153,7 @@ STATICFILES_DIRS = [
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-
-
-# settings.py
+# Logging
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,

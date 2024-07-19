@@ -32,7 +32,23 @@ class Comment(models.Model):
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
     description = models.TextField()
     policy = models.ForeignKey(Policy, on_delete=models.CASCADE)
+    comment_description = models.TextField()
     created_at = models.DateTimeField(default=timezone.now)
 
     def __str__(self):
         return f"{self.user} - {self.policy}"
+
+
+
+
+from django.db import models
+from django.utils import timezone
+
+class CommentReply(models.Model):
+    comment = models.ForeignKey(Comment, on_delete=models.CASCADE, related_name='replies')
+    replied_by = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
+    reply_message = models.TextField()
+    created_at = models.DateTimeField(default=timezone.now)
+
+    def __str__(self):
+        return f"Reply by {self.replied_by} on {self.comment}"

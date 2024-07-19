@@ -1,3 +1,4 @@
+from tkinter import Canvas
 from django.shortcuts import get_object_or_404, render, redirect
 from django.contrib import messages
 from django.views.decorators.csrf import csrf_exempt
@@ -5,11 +6,19 @@ import json
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
 from django.shortcuts import render
+import pandas as pd
 import requests
 from .models import Institution, Department, Policy
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
-from .serializers import DepartmentSerializer, InstitutionSerializer, PolicySerializer
+from .serializers import DepartmentSerializer, InstitutionSerializer, PolicySerializer, CommentSerializer
+from django.http import JsonResponse, HttpResponse
+from django.shortcuts import get_object_or_404
+from reportlab.lib.pagesizes import letter
+from reportlab.pdfgen import canvas
+import pandas as pd
+from .models import Policy, Institution, Department
+from .serializers import PolicySerializer, InstitutionSerializer, DepartmentSerializer
 
 
 
@@ -44,7 +53,7 @@ def add_institution(request):
     type = request.data.get('type')
 
     # Fetch all institutions from the server database
-    server_url = 'https://policy-link-server.onrender.com/api/view_all_institutions/'
+    server_url = 'http://127.0.0.1:9000/api/view_all_institutions/'
     try:
         response = requests.get(server_url)
         response.raise_for_status()  # Raise an exception for HTTP errors
@@ -64,7 +73,7 @@ def add_institution(request):
         new_institution = Institution.objects.create(name=name, type=type)
 
         # Retrieve associated departments for this institution from the server
-        departments_url = f'https://policy-link-server.onrender.com/api/get_departments_by_institution_name/?name={name}'
+        departments_url = f'http://127.0.0.1:9000/api/get_departments_by_institution_name/?name={name}'
         dept_response = requests.get(departments_url)
         dept_data = dept_response.json().get('departments', [])
         for dept in dept_data:
@@ -75,7 +84,7 @@ def add_institution(request):
             department = Department.objects.create(name=dept_name, institution=new_institution)
 
             # Retrieve associated policies for this department from the server
-            policies_url = f'https://policy-link-server.onrender.com/api/get_policies_by_department_name/?name={dept_name}'
+            policies_url = f'http://127.0.0.1:9000/api/get_policies_by_department_name/?name={dept_name}'
             policy_response = requests.get(policies_url)
             policy_data = policy_response.json().get('policies', [])
             for policy in policy_data:
@@ -102,6 +111,8 @@ def delete_institution(request, institution_id):
 @api_view(['GET'])
 # @permission_classes([IsAuthenticated])
 def view_all_departments(request):
+    synchronize_with_server()
+    
     departments = Department.objects.all()
     serializer = DepartmentSerializer(departments, many=True)
     return Response(serializer.data)
@@ -110,6 +121,9 @@ def view_all_departments(request):
 @api_view(['GET'])
 # @permission_classes([IsAuthenticated])
 def view_all_policies(request):
+    
+    synchronize_with_server()
+    
     policies = Policy.objects.all()
     serializer = PolicySerializer(policies, many=True)
     return Response(serializer.data)
@@ -128,8 +142,8 @@ import logging
 logger = logging.getLogger(__name__)
 
 @api_view(['GET'])
-def get_departments_by_institution(request):
-    institution_id = request.GET.get('institution_id')
+def get_departments_by_institution(request, institution_id):
+    # institution_id = request.GET.get('institution_id')
     logger.debug(f"Received institution_id: {institution_id}")
 
     departments = Department.objects.filter(institution=institution_id)
@@ -158,11 +172,31 @@ def get_policies_by_department(request):
     return Response(response_data)
 
 
+@api_view(['GET'])
+# @permission_classes([IsAuthenticated])
+def get_policies_by_department_by_id(request, department_id):
+    # department_id = request.GET.get('department_id')
+    
+    department = Department.objects.get(id=department_id)
+    
+    
+    policies = Policy.objects.filter(department=department)
+    serializer = PolicySerializer(policies, many=True)
+    response_data = {
+        'policies': serializer.data,
+        'department_name': department.name,
+        'institute_name': department.institution.name,
+        'institute_type': department.institution.type,
+    }
+    return Response(response_data)
+
+
+
 
 def synchronize_with_server():
     try:
         # Fetch all institutions from the server database
-        server_url = 'https://policy-link-server.onrender.com/api/view_all_institutions/'
+        server_url = 'http://127.0.0.1:9000/api/view_all_institutions/'
         print(f'Fetching institutions from {server_url}')
         response = requests.get(server_url)
         response.raise_for_status()  # Raise an exception for HTTP errors
@@ -211,7 +245,7 @@ def synchronize_with_server():
 def synchronize_departments_with_server(institution):
     try:
         # Fetch departments for the given institution from the server
-        departments_url = f'https://policy-link-server.onrender.com/api/get_departments_by_institution_name/?name={institution.name}'
+        departments_url = f'http://127.0.0.1:9000/api/get_departments_by_institution_name/?name={institution.name}'
         print(f'Fetching departments from {departments_url}')
         dept_response = requests.get(departments_url)
         dept_response.raise_for_status()
@@ -252,7 +286,7 @@ def synchronize_departments_with_server(institution):
 def synchronize_policies_with_server(department):
     try:
         # Fetch policies for the given department from the server
-        policies_url = f'https://policy-link-server.onrender.com/api/get_policies_by_department_name/?name={department.name}'
+        policies_url = f'http://127.0.0.1:9000/api/get_policies_by_department_name/?name={department.name}'
         print(f'Fetching policies from {policies_url}')
         policy_response = requests.get(policies_url)
         policy_response.raise_for_status()
@@ -287,24 +321,6 @@ def synchronize_policies_with_server(department):
 
     except requests.exceptions.RequestException as e:
         print(f'Error occurred while synchronizing policies with the server: {e}')
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -544,48 +560,75 @@ from rest_framework.decorators import api_view
 from .models import Comment, Policy
 from userAccount.models import CustomUser
 
-@api_view(['POST'])
+from django.http import JsonResponse
+from rest_framework.decorators import api_view
+from django.shortcuts import get_object_or_404
 
-def add_comment(request):
+
+@api_view(['POST'])
+@csrf_exempt
+def add_comment(request, policy_id):
     if request.method == 'POST':
         email = request.data.get('email')
         institution_name = request.data.get('institution')
         department_name = request.data.get('department')
-        policy_name = request.data.get('policy')
-        comment_description = request.data.get('description')
+        policy_name = request.data.get('policy_name')
+        description = request.data.get('description')
+        comment_description = request.data.get('comment_description')
+        
+        
+        print('DATA SUBMITTED FROM THE FORM \n')
+        print('======================== \n')
+        print(f'Policy id: {policy_id} \n')
+        print(f'User Email: {email} \n')
+        print(f'Institution: {institution_name} \n')
+        print(f'Department: {department_name} \n')
+        print(f'Policy name: {policy_name} \n')
+        print(f'Policy description: {description} \n')
+        print(f'comment: {comment_description} \n')
 
         # Retrieve user based on email
         user = get_object_or_404(CustomUser, email=email)
 
+        if not user:
+            return JsonResponse({'error': 'Email not found'}, status=400)
+
         # Retrieve policy based on name and department
-        policy = get_object_or_404(Policy, name=policy_name, department__name=department_name,
-                                   department__institution__name=institution_name)
+        # available_policy = get_object_or_404(Policy, policy_id)
+        
+        available_policy = Policy.objects.get(id=policy_id)
+        
+        if not available_policy:
+            print('\n Policy not found \n')
+            return JsonResponse({'error': 'Policy not found'}, status=400)
+        
+        try:
+            policy = Policy.objects.get(
+                name=policy_name,
+                department__name=department_name,
+                department__institution__name=institution_name
+            )
+        except Policy.DoesNotExist:
+            print('\n Policy not available \n')
+            return JsonResponse({'error': 'Policy not available'}, status=404)
 
         # Create and save the comment
-        comment = Comment(user=user, description=comment_description, policy=policy)
+        comment = Comment(user=user, comment_description=comment_description, description=description, policy=policy)
         comment.save()
 
         return JsonResponse({'message': 'Comment added successfully'}, status=201)
     else:
         return JsonResponse({'error': 'Invalid request method'}, status=400)
+    
 
 
-
+@api_view(['GET'])
 def view_all_comments(request):
     comments = Comment.objects.all()
-    data = [
-        {
-            'id': comment.id,
-            'user': comment.user.email,
-            'policy': comment.policy.name,
-            'description': comment.description,
-            'created_at': comment.created_at,
-            'department': comment.policy.department.name,
-            'institution': comment.policy.department.institution.name
-        }
-        for comment in comments
-    ]
-    return JsonResponse({'comments': data})
+    serializer = CommentSerializer(comments, many=True)
+    return Response(serializer.data)
+
+
 
 
 
@@ -607,7 +650,23 @@ def search_comment(request):
         return JsonResponse({'error': 'Invalid request method'}, status=400)
     
     
-    
+from django.contrib.auth.models import User
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
+from rest_framework import status
+from .models import Comment
+from .serializers import CommentSerializer
+
+@api_view(['GET'])
+def get_comments_by_username(request, username):
+    try:
+        user = User.objects.get(username=username)
+        comments = Comment.objects.filter(user=user)
+        serializer = CommentSerializer(comments, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    except User.DoesNotExist:
+        return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
+
     
 
 '''
@@ -656,3 +715,276 @@ def generate_comment_reports(request):
 
     return JsonResponse(report_data)
 
+
+
+@api_view(["GET"])
+def get_policy_by_id(request, policy_id):
+    policy = get_object_or_404(Policy, id=policy_id)
+    policy_data = {
+        
+        'policy_name': policy.name,
+        'department': policy.department.name,
+        'institution': policy.department.institution.name,
+        'description': policy.description,
+    }
+    return JsonResponse(policy_data)
+
+
+
+
+
+
+
+# Function to download all policies in PDF format
+def download_all_policies_pdf(request):
+    policies = Policy.objects.all()
+    response = HttpResponse(content_type='application/pdf')
+    response['Content-Disposition'] = 'attachment; filename="all_policies.pdf"'
+
+    p = canvas.Canvas(response, pagesize=letter)
+    width, height = letter
+    y = height - 40
+
+    p.drawString(100, y, "All Policies")
+    y -= 30
+
+    for policy in policies:
+        p.drawString(30, y, f"Policy Name: {policy.name}")
+        p.drawString(200, y, f"Description: {policy.description}")
+        p.drawString(400, y, f"Department: {policy.department.name}")
+        y -= 20
+        if y < 40:
+            p.showPage()
+            y = height - 40
+
+    p.save()
+    return response
+
+# Function to download all policies in Excel format
+def download_all_policies_excel(request):
+    policies = Policy.objects.all()
+    policy_data = [{
+        'Policy Name': policy.name,
+        'Description': policy.description,
+        'Department': policy.department.name,
+    } for policy in policies]
+
+    df = pd.DataFrame(policy_data)
+    response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    response['Content-Disposition'] = 'attachment; filename="all_policies.xlsx"'
+    df.to_excel(response, index=False)
+    return response
+
+
+
+# Function to download all institutions in PDF format
+def download_all_institutions_pdf(request):
+    institutions = Institution.objects.all()
+    response = HttpResponse(content_type='application/pdf')
+    response['Content-Disposition'] = 'attachment; filename="all_institutions.pdf"'
+
+    p = canvas.Canvas(response, pagesize=letter)
+    width, height = letter
+    y = height - 40
+
+    p.drawString(100, y, "All Institutions")
+    y -= 30
+
+    for institution in institutions:
+        p.drawString(30, y, f"Institution Name: {institution.name}")
+        p.drawString(200, y, f"Type: {institution.type}")
+        p.drawString(400, y, f"Created At: {institution.created_at}")
+        y -= 20
+        if y < 40:
+            p.showPage()
+            y = height - 40
+
+    p.save()
+    return response
+
+# Function to download all institutions in Excel format
+def download_all_institutions_excel(request):
+    institutions = Institution.objects.all()
+    institution_data = [{
+        'Institution Name': institution.name,
+        'Type': institution.type,
+        'Created At': institution.created_at,
+    } for institution in institutions]
+
+    df = pd.DataFrame(institution_data)
+    response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    response['Content-Disposition'] = 'attachment; filename="all_institutions.xlsx"'
+    df.to_excel(response, index=False)
+    return response
+
+# Function to download all departments in PDF format
+def download_all_departments_pdf(request):
+    departments = Department.objects.all()
+    response = HttpResponse(content_type='application/pdf')
+    response['Content-Disposition'] = 'attachment; filename="all_departments.pdf"'
+
+    p = canvas.Canvas(response, pagesize=letter)
+    width, height = letter
+    y = height - 40
+
+    p.drawString(100, y, "All Departments")
+    y -= 30
+
+    for department in departments:
+        p.drawString(30, y, f"Department Name: {department.name}")
+        p.drawString(200, y, f"Institution: {department.institution.name}")
+        y -= 20
+        if y < 40:
+            p.showPage()
+            y = height - 40
+
+    p.save()
+    return response
+
+# Function to download all departments in Excel format
+def download_all_departments_excel(request):
+    departments = Department.objects.all()
+    department_data = [{
+        'Department Name': department.name,
+        'Institution': department.institution.name,
+    } for department in departments]
+
+    df = pd.DataFrame(department_data)
+    response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    response['Content-Disposition'] = 'attachment; filename="all_departments.xlsx"'
+    df.to_excel(response, index=False)
+    return response
+
+
+
+
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
+from rest_framework import status
+from django.core.mail import send_mail
+from django.shortcuts import get_object_or_404
+from .models import Comment, CommentReply, CustomUser
+
+@api_view(['POST'])
+def comment_reply(request):
+    email = request.data.get('email')
+    reply_message = request.data.get('reply')
+    comment_id = request.data.get('comment_id')  # Ensure you get comment_id from request data
+
+    print(f'Email received: {email}')
+    print(f'Reply message received: {reply_message}')
+    print(f'Comment ID received: {comment_id}')
+
+    if not email or not reply_message or not comment_id:
+        return Response({'error': 'Email, reply message, and comment ID are required.'}, status=status.HTTP_400_BAD_REQUEST)
+
+    # Retrieve the user based on the email
+    user = get_object_or_404(CustomUser, email=email)
+
+    # Retrieve the comment based on comment_id
+    comment = get_object_or_404(Comment, id=comment_id)
+
+    try:
+        # Save the reply in the database
+        reply = CommentReply(
+            comment=comment,
+            replied_by=user,
+            reply_message=reply_message
+        )
+        reply.save()
+
+        # Send the reply via email
+        send_mail(
+            subject='Reply to your comment',
+            message=reply_message,
+            from_email='princemugabe567@gmail.com',
+            recipient_list=[email],
+        )
+        return Response({'message': 'Reply sent and saved successfully.'}, status=status.HTTP_200_OK)
+    except Exception as e:
+        return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['GET'])
+def get_comment_replies(request, email):
+    print(f'\n\n submitted email is {email}')
+    user = get_object_or_404(CustomUser, email=email)
+    print(f'\n\n User found email is {user}\n\n')
+    comment_replies = CommentReply.objects.filter(replied_by=user)
+
+    replies_data = [{
+        'comment': reply.comment.id,
+        'description': reply.comment.comment_description,
+        'reply_message': reply.reply_message,
+        'replied_by': reply.replied_by.email,
+        'created_at': reply.created_at
+    } for reply in comment_replies]
+
+    return Response(replies_data, status=status.HTTP_200_OK)
+    
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
+from rest_framework import status
+from .models import Comment
+from .serializers import CommentSerializer
+
+@api_view(['GET'])
+def get_comment_by_id(request, comment_id):
+    try:
+        comment = Comment.objects.get(id=comment_id)
+        serializer = CommentSerializer(comment)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    except Comment.DoesNotExist:
+        return Response({'error': 'Comment not found'}, status=status.HTTP_404_NOT_FOUND)
+    
+    
+    
+    
+    
+
+import os
+from django.conf import settings
+from django.http import HttpResponse
+from reportlab.lib.pagesizes import letter
+from reportlab.pdfgen import canvas
+from django.shortcuts import get_object_or_404
+from .models import Department, Policy
+
+# Function to download policies by department_id in PDF format
+def download_policies_by_department_pdf(request, department_id):
+    department = get_object_or_404(Department, id=department_id)
+    policies = Policy.objects.filter(department=department)
+
+    # Create a response object
+    response = HttpResponse(content_type='application/pdf')
+    filename = f"{department.name}_{department_id}.pdf"
+
+    # Set the content disposition to force download
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+
+    # Create PDF content using ReportLab
+    p = canvas.Canvas(response, pagesize=letter)
+    width, height = letter
+    y = height - 40
+
+    # Header
+    p.drawString(100, y, f"Policies for {department.name} at {department.institution.name}")
+    y -= 30
+
+    # Display each policy vertically
+    for policy in policies:
+        p.drawString(100, y, f"Policy Name: {policy.name}")
+        y -= 20
+        p.drawString(100, y, f"Department: {department.name}")
+        y -= 20
+        p.drawString(100, y, f"Institution: {department.institution.name}")
+        y -= 50
+        p.drawString(100, y, f"Description: {policy.description}")
+        y -= 30
+        
+
+    p.showPage()
+    p.save()
+
+    # Return the response object directly
+    return response
